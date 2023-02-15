@@ -1,7 +1,7 @@
 import express from "express";
 import sqlite3 from "sqlite3";
 import bodyParser from "body-parser";
-import fs from "fs";
+import fs, { exists } from "fs";
 
 
 
@@ -167,7 +167,49 @@ app.get("/users/:id/", (req, res) => {
 			res.json(output);
 		});
 	});
+});
 
+app.put("/users/:id/", (req, res) => {
+	database.serialize(() => {
+		const id = parseInt(req.params["id"]);
+		const update_request = req.body;
+		for (const property in update_request) {
+			if (property == "skills") {
+				const skills = update_request[property];
+				skills.forEach((skillEntry) => {
+					const skill = skillEntry["skill"];
+					const rating = skillEntry["rating"];
+					var existsInTable = false;
+					database.get(`SELECT skill, rating
+								  FROM skills
+								  WHERE skill = ? and hacker_id = ?`, [skill, id], (err, row) => {
+						if (err) throw err;
+						existsInTable = (row != undefined);
+					});
+					database.run(``, (err) => {
+						if (existsInTable) {
+							database.run(`UPDATE skills
+										  SET rating = ${rating}
+										  WHERE hacker_id = ${id} AND skill = "${skill}"`, (err) => {
+								if (err) throw err;
+							});
+						} else {
+							database.run(`INSERT INTO skills (hacker_id, skill, rating)
+										  VALUES (${id}, "${skill}", ${rating})`, (err) => {
+								if (err) throw err;
+							});
+						}
+					});
+				});
+			} else {
+				database.run(`UPDATE hackers 
+				SET "${property}" = "${update_request[property]}"
+				WHERE hacker_id = ${id}`, (err) => {
+					if (err) throw err;
+				});
+			}
+		}
+	});
 });
 
 app.put("/", (req, res) => {
@@ -179,7 +221,6 @@ app.put("/", (req, res) => {
 app.listen(port, () => {
 	console.log(`Example REST Express app listening at http://localhost:${port}`);
 });
-
 
 // database.close((err) => {
 // 	if (err) return console.error(err.message);
