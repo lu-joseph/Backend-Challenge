@@ -8,22 +8,7 @@ function getErrCallback(successMessage) {
 	};
 }
 
-function loadData() {
-	fs.readFile('./data.json', 'utf8', (err, jsonString) => {
-		if (err) {
-			console.log("File read failed:", err);
-			return;
-		}
-		try {
-			const data = JSON.parse(jsonString);
-			data.forEach((value) => {
-				console.log("value: " + JSON.stringify(value));
-			})
-		} catch (err) {
-			console.log("Error parsing JSON", err);
-		}
-	})
-}
+
 
 function connectDB(dbFile) {
 	return new sqlite3.Database(dbFile, sqlite3.OPEN_READWRITE, (err) => {
@@ -38,6 +23,8 @@ function dbRunMethodPromise(db, query, params) {
 		db.run(query, params, (err) => {
 			if (err) {
 				console.log("run method error");
+				console.log("query: " + query);
+				console.log("params: " + params);
 				reject(err);
 			}
 			resolve(true);
@@ -77,10 +64,81 @@ class HackerTable {
 		this.skillTable = skillTable;
 	}
 
+	// returns full user profile for hacker_id
+	async getHacker(hacker_id) {
+		const sql = `SELECT name, company, email, phone
+					 FROM hackers
+					 WHERE hacker_id = ?`;
+		const row = await dbGetMethodPromise(this.db, sql, [hacker_id]);
+		if (!row) {
+			console.log(`hacker_id ${hacker_id} not found`);
+			return {};
+		}
+		const skills = [];
+		const skillrows = await this.skillTable.getHackerSkills(hacker_id);
+		skillrows.forEach((skill) => { skills.push(JSON.stringify(skill)) });
+		const profile = JSON.parse(`{
+										"name": "${row.name}",
+										"company": "${row.company}",
+										"email": "${row.email}",
+										"phone": "${row.phone}",
+										"skills": [${skills}]
+									}`);
+		return profile;
+	}
+
+	async getAllHackers() {
+		const sql = `SELECT hacker_id
+					 FROM hackers`;
+		const hacker_ids = await dbAllMethodPromise(this.db, sql, []);
+		const profiles = [];
+		if (!hacker_ids) {
+			console.log("no hackers");
+		} else {
+			for (const i in hacker_ids) {
+				const hacker_id = parseInt(hacker_ids[i]["hacker_id"]);
+				const profile = await this.getHacker(hacker_id);
+				profiles.push(profile);
+			}
+		}
+		return profiles;
+	}
+
+	// returns true if update succeeded
+	async updateHacker(hacker_id, request) {
+		for (const property in request) {
+			if (property == "skills") {
+				const skills = request[property];
+				for (const i in skills) {
+					const skillEntry = skills[i];
+					const skill = skillEntry["skill"];
+					const rating = skillEntry["rating"];
+					const insertResult = await this.skillTable.insert(hacker_id, skill, rating);
+					if (!insertResult) {
+						console.log("unable to insert skill " + skill);
+						return false;
+					}
+				}
+			} else {
+				const value = request[property];
+				const sql = `UPDATE hackers
+							 SET ${property} = ? 
+							 WHERE hacker_id = ?`;
+				const runResult = await dbRunMethodPromise(this.db, sql, [value, hacker_id]);
+				if (!runResult) {
+					console.log("Unable to update " + property + " for hacker_id " + hacker_id);
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
 	// returns true if insertion successfully
 	// 	if hacker already found in table, won't insert
 	//  each skill in skills of form: {"skill": <TEXT>, "rating": <INTEGER>}
 	async insertHackerProfile(name, company, email, phone, skills) {
+		console.log("inside");
 		const possibleHackerID = await this.findHackerID(name, company, email, phone);
 		if (possibleHackerID) {
 			console.log("hacker already in table");
@@ -90,9 +148,9 @@ class HackerTable {
 		if (!insertSuccess) return false;
 		const hacker_id = await this.findHackerID(name, company, email, phone);
 		if (!hacker_id) return false;
-		console.log("skills: " + skills.toString());
+		console.log("skills: " + JSON.stringify(skills));
 		for (const i in skills) {
-			const skillEntry = JSON.parse(skills[i]);
+			const skillEntry = skills[i];
 			console.log("looping at " + JSON.stringify(skillEntry));
 			const skillInsertSuccess = await this.skillTable.insert(hacker_id, skillEntry["skill"], skillEntry["rating"]);
 			if (!skillInsertSuccess) {
@@ -152,9 +210,14 @@ class SkillTable {
 		this.db = db;
 	}
 
+	// returns list of skills of form {"name": <TEXT>, "frequency": <INTEGER>}
+	async getAllSkills(min, max) {
+		const sql = ``;
+	}
+
 	// returns list of skill entries of form {"hacker_id": <INTGER>, "skill": <TEXT>, "rating": <Integer>}
 	async getHackerSkills(hacker_id) {
-		const sql = `SELECT * 
+		const sql = `SELECT skill, rating 
 					 FROM skills
 					 WHERE hacker_id = ?`;
 		const rows = await dbAllMethodPromise(this.db, sql, [hacker_id]);
@@ -170,14 +233,16 @@ class SkillTable {
 	async insert(hacker_id, skill, rating) {
 		const skillEntries = await this.getHackerSkills(hacker_id);
 		var found = false;
-		var updateSuccess = false;
-		for (const skillEntry in skillEntries) {
+		console.log("skillEntries: " + JSON.stringify(skillEntries));
+		for (const i in skillEntries) {
+			const skillEntry = skillEntries[i];
+			console.log("skillEntry: " + JSON.stringify(skillEntry));
 			if (skill == skillEntry["skill"]) {
 				found = true;
 				const sql = `UPDATE skills
 							 SET rating = ?
 							 WHERE skill = ? AND hacker_id = ?`;
-				const runSuccess = await dbRunMethodPromise(this.db, sql, [skillEntry["rating"], skill, hacker_id]);
+				const runSuccess = await dbRunMethodPromise(this.db, sql, [rating, skill, hacker_id]);
 				if (runSuccess) {
 					console.log("skill updated successfully");
 					return true;
@@ -212,14 +277,25 @@ class SkillTable {
 	}
 }
 
+async function loadData(hackerTable) {
+	fs.readFile('./data.json', 'utf8', async (err, jsonString) => {
+		if (err) {
+			console.log("File read failed:", err);
+			return;
+		}
+		try {
+			const data = JSON.parse(jsonString);
+			// console.log("data: " + data);
+			for (const i in data) {
+				const value = data[i];
+				const result = await hackerTable.insertHackerProfile(value["name"], value["company"], value["email"], value["phone"], value["skills"]);
+				if (!result) console.log("failed to insert profile");
+			}
+		} catch (err) {
+			console.log("Error parsing JSON", err);
+		}
+	});
+	return true;
+}
 
-
-
-
-
-
-
-
-
-
-export { connectDB, HackerTable, SkillTable };
+export { loadData, connectDB, HackerTable, SkillTable };
