@@ -1,9 +1,6 @@
 import express from "express";
-import sqlite3 from "sqlite3";
 import bodyParser from "body-parser";
-import fs, { exists } from "fs";
-
-
+import { connectDB, HackerTable, SkillTable } from "./src/db.js";
 
 const port = process.env.PORT || 3000;
 
@@ -11,74 +8,34 @@ const app = express();
 
 app.use(bodyParser.json());
 
-function loadData() {
-	fs.readFile('./data.json', 'utf8', (err, jsonString) => {
-		if (err) {
-			console.log("File read failed:", err);
-			return;
-		}
-		try {
-			const data = JSON.parse(jsonString);
-			data.forEach((value) => {
-				console.log("value: " + JSON.stringify(value));
-			})
-		} catch (err) {
-			console.log("Error parsing JSON", err);
-		}
-	})
-}
-
-// loadData();
-
-
 // Create a database if none exists
-const database = new sqlite3.Database("hackers.db", sqlite3.OPEN_READWRITE, (err) => {
-	if (err) return console.error(err.message);
-	console.log("connection successful");
-});
+const database = connectDB("hackers.db");
+
+const skills = new SkillTable(database);
+const hackers = new HackerTable(database, skills);
+
+const result = await hackers.insertHackerProfile("bob", "joe", "bob@joe.com", "123", [`{ "skill": "python", "rating": 8 }`, `{ "skill": "C++", "rating": 2 }`]);
+// const result = await hackers.remove(2);
+console.log("result: " + JSON.stringify(result));
+
+// const result = await insertHacker(database, "bob", "joe", "bob@joe.com", "123");
+// console.log("result: " + result);
+
+// const id = await findHackerID(database, "Breanna Don", "Jackson Ltd", "lorettabrown@example.net", '+1-924-116-7963');
+// console.log("findHackerID returned id: " + id);
 
 
-function errCallback(err) {
-	if (err) return console.error(err.message);
-	console.log("inserted");
-}
-
-// const hackers = [];
-// const sql = `SELECT hacker_id, name, company, email, phone
-// 				 FROM hackers`;
-// database.all(sql, [], (hackers_err, hackers_rows) => {
-// 	if (hackers_err) throw hackers_err;
-
-// 	hackers_rows.forEach((hackers_row) => {
-// 		const skill_sql = `SELECT skill, rating
-// 						   FROM skills
-// 						   WHERE hacker_id = ?`;
-// 		const skills_array = [];
-// 		database.each(skill_sql, [hackers_row.hacker_id], (skills_err, skills_row) => {
-// 			if (skills_err) throw skills_err;
-// 			skills_array.push(`{ "skill":"${skills_row.skill}", "rating":"${skills_row.rating}" }`);
-// 			console.log(skills_array.toString());
-// 		});
-// 		console.log("skills: " + skills_array.toString());
-// 		// hackers.push(JSON.parse(`{
-// 		// 								"name":"${hackers_row.name}", 
-// 		// 								"company":"${hackers_row.company}", 
-// 		// 								"email":"${hackers_row.email}", 
-// 		// 								"phone":"${hackers_row.phone}",
-// 		// 								"skills": ` + skills.toString() + `}`));
-// 	});
+// database.serialize(() => {
+// 	findHackerID(database, "Breanna Dillon", "Jackson Ltd", "lorettabrown@example.net", " + 1 - 924 - 116 - 7963").then((x) => { console.log("returned id: " + x) });
+// 	// database.run(``, async (err) => {
+// 	// 	console.log("returned id: " + await findHackerID(database, "Breanna Dillon", "Jackson Ltd", "lorettabrown@example.net", "+1-924-116-7963"));
+// 	// });
+// 	// database.close((err) => {
+// 	// 	if (err) return console.error(err.message);
+// 	// 	console.log("Closing database");
+// 	// })
 // });
 
-// console.log(hackers);
-
-// function
-// const sql = `INSERT INTO hackers (name, company, email, phone, skills_id)
-//               VALUES(?,?,?,?,?)`;
-
-// database.run(sql, ['john smith', 'Shopify', 'johnsmith@shopify.com', '1234567890', 1], (err) => {
-//   if (err) return console.error(err.message);
-//   console.log("new row added");
-// });
 
 // database.run(`INSERT INTO hackers (name, company, email, phone, skills_id)
 // 			  VALUES("Breanna Dillon", "Jackson Ltd", "lorettabrown@example.net", "+1-924-116-7963", 1)`, (err) => {
@@ -222,7 +179,3 @@ app.listen(port, () => {
 	console.log(`Example REST Express app listening at http://localhost:${port}`);
 });
 
-// database.close((err) => {
-// 	if (err) return console.error(err.message);
-// 	console.log("Closing database");
-// })
