@@ -1,12 +1,34 @@
 import express from "express";
 import sqlite3 from "sqlite3";
 import bodyParser from "body-parser";
+import fs from "fs";
+
+
 
 const port = process.env.PORT || 3000;
 
 const app = express();
 
 app.use(bodyParser.json());
+
+function loadData() {
+	fs.readFile('./data.json', 'utf8', (err, jsonString) => {
+		if (err) {
+			console.log("File read failed:", err);
+			return;
+		}
+		try {
+			const data = JSON.parse(jsonString);
+			data.forEach((value) => {
+				console.log("value: " + JSON.stringify(value));
+			})
+		} catch (err) {
+			console.log("Error parsing JSON", err);
+		}
+	})
+}
+
+// loadData();
 
 
 // Create a database if none exists
@@ -106,6 +128,46 @@ app.get("/users/", (req, res) => {
 		});
 		res.json(JSON.parse(result));
 	})
+});
+
+// app.put("/users/add/", (req, res) => {
+
+// });
+
+app.get("/users/:id/", (req, res) => {
+	database.serialize(() => {
+		const id = parseInt(req.params["id"]);
+		console.log(id);
+		var output = "";
+		database.get(`SELECT name, company, email, phone
+				  FROM hackers
+				  WHERE hacker_id = ?`, [id], (err, row) => {
+			if (err) throw err;
+			if (!row) { // id not in hackers table
+
+			}
+			else {
+				output = JSON.parse(`{
+					"name": "${row.name}",
+					"company": "${row.company}",
+					"email": "${row.email}",
+					"phone": "${row.phone}",
+					"skills": []
+				}`);
+				console.log("initial output: " + JSON.stringify(output));
+			}
+		});
+		database.each(`SELECT skill, rating 
+					   FROM skills
+					   WHERE hacker_id = ?`, [id], (err, row) => {
+			output["skills"].push(JSON.parse(`{"skill":"${row.skill}", "rating":"${row.rating}"}`));
+			console.log("output is now: " + JSON.stringify(output));
+		});
+		database.run(``, (err) => {
+			res.json(output);
+		});
+	});
+
 });
 
 app.put("/", (req, res) => {
