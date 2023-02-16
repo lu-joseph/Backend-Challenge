@@ -1,8 +1,11 @@
 import express from "express";
 import bodyParser from "body-parser";
+import Joi from 'joi';
 import { loadData, connectDB } from "./src/db.js";
 import { HackersTable } from "./src/HackersTable.js";
 import { SkillsTable } from "./src/SkillsTable.js";
+import { schemas } from "./src/schemas.js";
+import { validateBodySchema, validateIntegerParam } from "./src/RouterMiddleware.js";
 
 const port = process.env.PORT || 3000;
 
@@ -15,23 +18,24 @@ const database = connectDB("hackers.db");
 const skills = new SkillsTable(database);
 const hackers = new HackersTable(database, skills);
 
-// app.get("/", async (req, res) => {
-// 	const result = await loadData(hackers);
-// 	res.send("Hello World!");
-// });
+app.get("/loaddata", async (req, res) => {
+	const result = await loadData(hackers);
+	const response = result ? "successfully loaded data" : "failed to load data";
+	res.send(response);
+});
 
 app.get("/users/", async (req, res) => {
-	const hackersList = await hackers.getAllHackers();
-	res.json(hackersList);
+	const result = await hackers.getAllHackers();
+	res.status(200).json(result);
 });
 
-app.get("/users/:id/", async (req, res) => {
+app.get("/users/:id/", validateIntegerParam("id"), async (req, res) => {
 	const hacker_id = parseInt(req.params["id"]);
 	const hacker = await hackers.getHacker(hacker_id);
-	res.json(hacker);
+	res.status(200).json(hacker);
 });
 
-app.put("/users/:id/", async (req, res) => {
+app.put("/users/:id/", validateIntegerParam("id"), validateBodySchema(schemas.updateUserSchema), async (req, res) => {
 	const hacker_id = parseInt(req.params["id"]);
 	const update_request = req.body;
 	const result = await hackers.updateHacker(hacker_id, update_request);
@@ -48,7 +52,7 @@ app.get("/skills", async (req, res) => {
 	res.json(skillsList);
 });
 
-app.put("/skills/:id/:skill/:rating/", async (req, res) => {
+app.put("/skills/:id/:skill/:rating/", validateIntegerParam("id"), validateIntegerParam("rating"), async (req, res) => {
 	const hacker_id = parseInt(req.params["id"]);
 	const skill = req.params["skill"];
 	const rating = parseInt(req.params["rating"]);

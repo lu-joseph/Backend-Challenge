@@ -1,3 +1,4 @@
+import { query } from "express";
 import { dbGetMethodPromise, dbAllMethodPromise, dbRunMethodPromise } from "./db.js";
 
 class HackersTable {
@@ -6,20 +7,22 @@ class HackersTable {
         this.skillTable = skillTable;
     }
 
-    // returns full user profile for hacker_id
+    // returns user profile for hacker_id.
+    //      if no hacker with hacker_id found, returns {}
     async getHacker(hacker_id) {
         const sql = `SELECT name, company, email, phone
 					 FROM hackers
 					 WHERE hacker_id = ?`;
         const row = await dbGetMethodPromise(this.db, sql, [hacker_id]);
+        var profile = {};
         if (!row) {
             console.log(`hacker_id ${hacker_id} not found`);
-            return {};
+            return profile;
         }
         const skills = [];
         const skillrows = await this.skillTable.getHackerSkills(hacker_id);
         skillrows.forEach((skill) => { skills.push(JSON.stringify(skill)) });
-        const profile = JSON.parse(`{
+        profile = JSON.parse(`{
 										"name": "${row.name}",
 										"company": "${row.company}",
 										"email": "${row.email}",
@@ -29,19 +32,18 @@ class HackersTable {
         return profile;
     }
 
+    // returns the list of hacker profiles
     async getAllHackers() {
         const sql = `SELECT hacker_id
 					 FROM hackers`;
-        const hacker_ids = await dbAllMethodPromise(this.db, sql, []);
+        const result = await dbAllMethodPromise(this.db, sql, []);
         const profiles = [];
-        if (!hacker_ids) {
-            console.log("no hackers");
-        } else {
-            for (const i in hacker_ids) {
-                const hacker_id = parseInt(hacker_ids[i]["hacker_id"]);
-                const profile = await this.getHacker(hacker_id);
-                profiles.push(profile);
-            }
+        if (!result)
+            return profiles;
+        for (const i in result) {
+            const hacker_id = parseInt(result[i]["hacker_id"]);
+            const profile = await this.getHacker(hacker_id);
+            profiles.push(profile);
         }
         return profiles;
     }
@@ -80,7 +82,6 @@ class HackersTable {
     // 	if hacker already found in table, won't insert
     //  each skill in skills of form: {"skill": <TEXT>, "rating": <INTEGER>}
     async insertHackerProfile(name, company, email, phone, skills) {
-        console.log("inside");
         const possibleHackerID = await this.findHackerID(name, company, email, phone);
         if (possibleHackerID) {
             console.log("hacker already in table");
@@ -90,10 +91,8 @@ class HackersTable {
         if (!insertSuccess) return false;
         const hacker_id = await this.findHackerID(name, company, email, phone);
         if (!hacker_id) return false;
-        console.log("skills: " + JSON.stringify(skills));
         for (const i in skills) {
             const skillEntry = skills[i];
-            console.log("looping at " + JSON.stringify(skillEntry));
             const skillInsertSuccess = await this.skillTable.insert(hacker_id, skillEntry["skill"], skillEntry["rating"]);
             if (!skillInsertSuccess) {
                 console.log("skill " + skillEntry["skill"] + " failed to insert");

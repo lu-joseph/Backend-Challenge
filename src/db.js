@@ -14,8 +14,6 @@ function dbRunMethodPromise(db, query, params) {
 		db.run(query, params, (err) => {
 			if (err) {
 				console.log("run method error");
-				console.log("query: " + query);
-				console.log("params: " + params);
 				reject(err);
 			}
 			resolve(true);
@@ -36,12 +34,12 @@ function dbGetMethodPromise(db, query, params) {
 	});
 }
 
-// returns promise for rows from all method
+// returns a promise for a run of the given query using the all() method for the database
 function dbAllMethodPromise(db, query, params) {
 	return new Promise((resolve, reject) => {
 		db.all(query, params, (err, rows) => {
 			if (err) {
-				console.log("get method error");
+				console.log("database all() method error");
 				reject(err);
 			}
 			resolve(rows);
@@ -61,7 +59,10 @@ async function loadData(hackerTable) {
 			for (const i in data) {
 				const value = data[i];
 				const result = await hackerTable.insertHackerProfile(value["name"], value["company"], value["email"], value["phone"], value["skills"]);
-				if (!result) console.log("failed to insert profile");
+				if (!result) {
+					console.log("failed to insert profile");
+					return false;
+				}
 			}
 		} catch (err) {
 			console.log("Error parsing JSON", err);
