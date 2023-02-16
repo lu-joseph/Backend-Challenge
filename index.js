@@ -1,6 +1,8 @@
 import express from "express";
 import bodyParser from "body-parser";
-import { loadData, connectDB, HackerTable, SkillTable } from "./src/db.js";
+import { loadData, connectDB } from "./src/db.js";
+import { HackersTable } from "./src/HackersTable.js";
+import { SkillsTable } from "./src/SkillsTable.js";
 
 const port = process.env.PORT || 3000;
 
@@ -8,16 +10,15 @@ const app = express();
 
 app.use(bodyParser.json());
 
-// Create a database if none exists
 const database = connectDB("hackers.db");
 
-const skills = new SkillTable(database);
-const hackers = new HackerTable(database, skills);
+const skills = new SkillsTable(database);
+const hackers = new HackersTable(database, skills);
 
-app.get("/", async (req, res) => {
-	const result = await loadData(hackers);
-	res.send("Hello World!");
-});
+// app.get("/", async (req, res) => {
+// 	const result = await loadData(hackers);
+// 	res.send("Hello World!");
+// });
 
 app.get("/users/", async (req, res) => {
 	const hackersList = await hackers.getAllHackers();
@@ -39,6 +40,14 @@ app.put("/users/:id/", async (req, res) => {
 	res.json(newProfile);
 });
 
+app.get("/skills", async (req, res) => {
+	const min = parseInt(req.query.min_frequency);
+	const max = parseInt(req.query.max_frequency);
+	const skillsList = await skills.getAllSkills(min, max);
+	if (!skillsList) console.log("no skills match query");
+	res.json(skillsList);
+});
+
 app.put("/skills/:id/:skill/:rating/", async (req, res) => {
 	const hacker_id = parseInt(req.params["id"]);
 	const skill = req.params["skill"];
@@ -46,12 +55,6 @@ app.put("/skills/:id/:skill/:rating/", async (req, res) => {
 	const result = await skills.insert(hacker_id, skill, rating);
 	if (!result) console.log("insert failed");
 	res.json({});
-});
-
-app.put("/", (req, res) => {
-	// const body = req.body;
-	console.log(req.body);
-	res.json(req.body);
 });
 
 app.listen(port, () => {
