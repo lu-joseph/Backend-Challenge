@@ -5,7 +5,7 @@ import { loadData, connectDB } from "./src/db.js";
 import { HackersTable } from "./src/HackersTable.js";
 import { SkillsTable } from "./src/SkillsTable.js";
 import { schemas } from "./src/schemas.js";
-import { validateBodySchema, validateIntegerParam } from "./src/RouterMiddleware.js";
+import { validateBodySchema, validateIntegerParam, validateInteger } from "./src/RouterMiddleware.js";
 
 const port = process.env.PORT || 3000;
 
@@ -45,11 +45,15 @@ app.put("/users/:id/", validateIntegerParam("id"), validateBodySchema(schemas.up
 });
 
 app.get("/skills", async (req, res) => {
-	const min = parseInt(req.query.min_frequency);
-	const max = parseInt(req.query.max_frequency);
-	const skillsList = await skills.getAllSkills(min, max);
-	if (!skillsList) console.log("no skills match query");
-	res.json(skillsList);
+	var min = req.query.min_frequency;
+	var max = req.query.max_frequency;
+	if (validateInteger(min, res) && validateInteger(max, res)) {
+		min = parseInt(min);
+		max = parseInt(max);
+		const skillsList = await skills.getAllSkills(min, max);
+		if (!skillsList) console.log("no skills match query");
+		res.json(skillsList);
+	}
 });
 
 app.put("/skills/:id/:skill/:rating/", validateIntegerParam("id"), validateIntegerParam("rating"), async (req, res) => {

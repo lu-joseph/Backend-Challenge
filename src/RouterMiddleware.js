@@ -11,12 +11,20 @@ function validateBodySchema(schema, property) {
     }
 }
 
+function validateInteger(num, res) {
+    if (isNaN(parseInt(num))) {
+        res.status(400).send(num + " is not a valid number");
+        return false;
+    }
+    return true;
+}
+
 function validateIntegerParam(name) {
     return (req, res, next) => {
-        if (isNaN(parseInt(req.params[name])))
-            res.status(400).send(`Invalid {${name}} parameter`);
-        else
+        if (validateInteger(req.params[name], res))
             next();
     }
 }
-export { validateBodySchema, validateIntegerParam };
+
+
+export { validateBodySchema, validateIntegerParam, validateInteger };
