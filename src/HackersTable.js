@@ -7,7 +7,7 @@ class HackersTable {
         this.skillTable = skillTable;
     }
 
-    // returns user profile for hacker_id.
+    // returns user profile for hacker_id
     //      if no hacker with hacker_id found, returns {}
     async getHacker(hacker_id) {
         const sql = `SELECT name, company, email, phone
@@ -23,12 +23,12 @@ class HackersTable {
         const skillrows = await this.skillTable.getHackerSkills(hacker_id);
         skillrows.forEach((skill) => { skills.push(JSON.stringify(skill)) });
         profile = JSON.parse(`{
-										"name": "${row.name}",
-										"company": "${row.company}",
-										"email": "${row.email}",
-										"phone": "${row.phone}",
-										"skills": [${skills}]
-									}`);
+                                    "name": "${row.name}",
+                                    "company": "${row.company}",
+                                    "email": "${row.email}",
+                                    "phone": "${row.phone}",
+                                    "skills": [${skills}]
+                              }`);
         return profile;
     }
 
@@ -48,6 +48,21 @@ class HackersTable {
         return profiles;
     }
 
+    // updates row in hackers table
+    // returns true if update succeeded
+    async updateHackerRow(hacker_id, property, value) {
+        const sql = `UPDATE hackers
+							 SET ${property} = ? 
+							 WHERE hacker_id = ?`;
+        const runResult = await dbRunMethodPromise(this.db, sql, [value, hacker_id]);
+        if (!runResult) {
+            console.log("Unable to update " + property + " for hacker_id " + hacker_id);
+            return false;
+        }
+        return true;
+    }
+
+    // given request json, 
     // returns true if update succeeded
     async updateHacker(hacker_id, request) {
         for (const property in request) {
@@ -55,24 +70,15 @@ class HackersTable {
                 const skills = request[property];
                 for (const i in skills) {
                     const skillEntry = skills[i];
-                    const skill = skillEntry["skill"];
-                    const rating = skillEntry["rating"];
-                    const insertResult = await this.skillTable.insert(hacker_id, skill, rating);
+                    const insertResult = await this.skillTable.insert(hacker_id, skillEntry["skill"], skillEntry["rating"]);
                     if (!insertResult) {
-                        console.log("unable to insert skill " + skill);
+                        console.log("unable to insert skill " + skillEntry["skill"]);
                         return false;
                     }
                 }
             } else {
-                const value = request[property];
-                const sql = `UPDATE hackers
-							 SET ${property} = ? 
-							 WHERE hacker_id = ?`;
-                const runResult = await dbRunMethodPromise(this.db, sql, [value, hacker_id]);
-                if (!runResult) {
-                    console.log("Unable to update " + property + " for hacker_id " + hacker_id);
-                    return false;
-                }
+                const updateSuccess = await this.updateHackerRow(hacker_id, property, request[property]);
+                if (!updateSuccess) return false
             }
         }
         return true;

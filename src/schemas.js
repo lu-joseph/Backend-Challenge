@@ -19,6 +19,11 @@ const schemas = {
             skill: Joi.string().required(),
             rating: Joi.number().required()
         })).optional()
+    }),
+    newSkillSchema: Joi.object().keys({
+        hacker_id: Joi.number().required(),
+        skill: Joi.string().required(),
+        rating: Joi.number().required()
     })
 };
 

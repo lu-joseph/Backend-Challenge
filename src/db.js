@@ -1,4 +1,4 @@
-import fs from "fs";
+
 import sqlite3 from "sqlite3";
 
 function connectDB(dbFile) {
@@ -47,28 +47,6 @@ function dbAllMethodPromise(db, query, params) {
 	});
 }
 
-async function loadData(hackerTable) {
-	fs.readFile('./data.json', 'utf8', async (err, jsonString) => {
-		if (err) {
-			console.log("File read failed:", err);
-			return;
-		}
-		try {
-			const data = JSON.parse(jsonString);
-			// console.log("data: " + data);
-			for (const i in data) {
-				const value = data[i];
-				const result = await hackerTable.insertHackerProfile(value["name"], value["company"], value["email"], value["phone"], value["skills"]);
-				if (!result) {
-					console.log("failed to insert profile");
-					return false;
-				}
-			}
-		} catch (err) {
-			console.log("Error parsing JSON", err);
-		}
-	});
-	return true;
-}
 
-export { dbAllMethodPromise, dbGetMethodPromise, dbRunMethodPromise, loadData, connectDB }; 
+
+export { dbAllMethodPromise, dbGetMethodPromise, dbRunMethodPromise, connectDB }; 
