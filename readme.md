@@ -203,7 +203,7 @@ Json object holding hacker data to be updated. Can be a partial update.
 <td> <b>Code</b> </td> <td> <b>Description</b> </td>
 </tr>
 <tr>
-<td> 200 </td>
+<td> 201 </td>
 <td>
 
 Successful operation
@@ -308,6 +308,254 @@ Successful operation
 </table>
 </details>
 
+<!-- 
+
+INSERT/UPDATE SKILL
+
+ -->
+
+<details> <summary><b>PUT</b> <code>/skills/</code></summary> 
+
+Updates a skill's rating if it already exists, otherwise inserts skill into the skills table.
+
+#### Parameters:
+
+<blockquote>
+<table>
+<tr>
+<td> <b>Name</b> </td> <td> <b>Type</b> </td> <td> <b>Data type</b> </td> <td> <b>Description</b> </td>
+</tr>
+<tr>
+<td> body </td> <td> body </td> <td> JSON object </td> <td> JSON object for skill
+<details>
+<summary>
+Example value
+</summary>
+
+```json
+{
+  "hacker_id": 1,
+  "skill": "Swift",
+  "rating": 10
+}
+```
+
+</details>
+ </td>
+</tr>
+</table>
+</blockquote>
+
+
+#### Responses:
+
+> <table>
+<tr>
+<td> <b>Code</b> </td> <td> <b>Description</b> </td>
+</tr>
+<tr>
+<td> 201 </td>
+<td>
+
+Successful operation
+
+<details> <summary>Example value</summary>
+
+```json
+{
+  "skill": "Swift",
+  "rating": 10
+}
+```
+
+</details>
+</td>
+</tr>
+<tr> 
+<td> 400 </td>
+
+<td> Invalid body JSON  </td>
+</tr>
+</table>
+</details>
+
+<!-- 
+
+GET EVENT
+
+ -->
+
+<details> <summary><b>GET</b> <code>/events/{id}</code></summary> 
+
+Returns data for a specific event.
+
+#### Parameters:
+
+<blockquote>
+<table>
+<tr>
+<td> <b>Name</b> </td> <td> <b>Type</b> </td> <td> <b>Data type</b> </td> <td> <b>Description</b> </td>
+</tr>
+<tr>
+<td> id </td> <td> path </td> <td> integer </td> <td> event_id for event to return
+
+</td>
+</tr>
+</table>
+</blockquote>
+
+
+#### Responses:
+
+> <table>
+<tr>
+<td> <b>Code</b> </td> <td> <b>Description</b> </td>
+</tr>
+<tr>
+<td> 200 </td>
+<td>
+
+Successful operation
+
+<details> <summary>Example value</summary>
+
+```json
+{
+  "name": "Drone Show",
+  "hackers": [
+    1,
+    2,
+    3
+  ]
+}
+```
+
+</details>
+</td>
+</tr>
+
+</table>
+</details>
+
+<!-- 
+
+GET ALL EVENTS
+
+ -->
+
+<details> <summary><b>GET</b> <code>/events/</code></summary> 
+
+Returns a list of events with aggregated info.
+
+#### Parameters:
+
+- None
+
+
+#### Responses:
+
+> <table>
+<tr>
+<td> <b>Code</b> </td> <td> <b>Description</b> </td>
+</tr>
+<tr>
+<td> 200 </td>
+<td>
+
+Successful operation
+
+<details> <summary>Example value</summary>
+
+```json
+[
+  {
+    "name": "Bubble Soccer",
+    "attendance": 126
+  }
+]
+```
+
+</details>
+</td>
+</tr>
+
+</table>
+</details>
+
+
+<!-- 
+
+PUT EVENT ATTEND
+
+ -->
+
+ <details> <summary><b>PUT</b> <code>/events/attend</code></summary> 
+
+Updates involvements table to accomodate for a hacker attending an event.
+
+#### Parameters:
+
+<blockquote>
+<table>
+<tr>
+<td> <b>Name</b> </td> <td> <b>Type</b> </td> <td> <b>Data type</b> </td> <td> <b>Description</b> </td>
+</tr>
+<tr>
+<td> body </td> <td> body </td> <td> JSON object </td> <td> event_id for event to return
+
+<details>
+<summary>
+Example value
+</summary>
+
+```json
+{
+  "hacker_id": 1,
+  "event_id": 5
+}
+```
+
+</details>
+</td>
+</tr>
+</table>
+</blockquote>
+
+
+#### Responses:
+
+> <table>
+<tr>
+<td> <b>Code</b> </td> <td> <b>Description</b> </td>
+</tr>
+<tr>
+<td> 201 </td>
+<td>
+
+Successful operation
+
+<details> <summary>Example value</summary>
+
+```json
+{
+  "hacker_id": 1,
+  "event_id": 5
+}
+```
+
+</details>
+</td>
+</tr>
+
+<tr>
+<td> 400 </td>
+
+<td> Unsuccessful operation </td>
+</tr>
+
+</table>
+</details>
+
 
 ## Improvements beyond minimum requirements:
 
@@ -317,3 +565,5 @@ Successful operation
 * HTTP codes:
   * Endpoints return the proper HTTP codes according to convention.
 
+* Events:
+  * Endpoints to deal with hackers attending events

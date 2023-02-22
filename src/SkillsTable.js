@@ -32,7 +32,7 @@ class SkillsTable {
     }
 
     // inserts row into skills table
-    // returns true if insertion successful
+    // returns the new skill if insertion successful
     //      should not be called if (hacker_id, skill) pairing already in table
     async insert(hacker_id, skill, rating) {
         const sql = `INSERT INTO skills (hacker_id, skill, rating)
@@ -40,14 +40,14 @@ class SkillsTable {
         const runSuccess = await dbRunMethodPromise(this.db, sql, [hacker_id, skill, rating]);
         if (runSuccess) {
             console.log(`skill ${skill} added successfully`);
-            return true;
+            return JSON.parse(`{"skill": "${skill}", "rating": ${rating}}`);
         }
         console.log("skill insert failed");
-        return false;
+        return {};
     }
 
     // updates rating for the row in skills table, given hacker_id and skill
-    // returns true if update successful
+    // returns the new skill if update successful
     //      should only be called if (hacker_id, skill) pairing already in table
     async update(hacker_id, skill, rating) {
         const sql = `UPDATE skills
@@ -56,14 +56,14 @@ class SkillsTable {
         const runSuccess = await dbRunMethodPromise(this.db, sql, [rating, skill, hacker_id]);
         if (runSuccess) {
             console.log("skill updated successfully");
-            return true;
+            return JSON.parse(`{"skill":${skill}, "rating":${rating}}`);
         }
         console.log("skill update failed");
-        return false;
+        return {};
     }
 
     // looks for (hacker_id, skill) pairing: if exists, updates rating, otherwise insert entry
-    // returns true if update successful
+    // returns the new skill if insertion/update successful
     async insertOrUpdate(hacker_id, skill, rating) {
         const skillEntries = await this.getHackerSkills(hacker_id);
         for (const i in skillEntries) {

@@ -1,10 +1,11 @@
-import { query } from "express";
 import { dbGetMethodPromise, dbAllMethodPromise, dbRunMethodPromise } from "./db.js";
 
 class HackersTable {
-    constructor(db, skillTable) {
+    constructor(db, skillTable, involvementTable, eventsTable) {
         this.db = db;
         this.skillTable = skillTable;
+        this.involvementTable = involvementTable;
+        this.eventsTable = eventsTable;
     }
 
     // returns user profile for hacker_id
@@ -22,12 +23,20 @@ class HackersTable {
         const skills = [];
         const skillrows = await this.skillTable.getHackerSkills(hacker_id);
         skillrows.forEach((skill) => { skills.push(JSON.stringify(skill)) });
+        const eventIDs = await this.involvementTable.getEvents(hacker_id);
+        const events = [];
+        for (const i in eventIDs) {
+            const event_id = eventIDs[i];
+            const event = await this.eventsTable.getEvent(event_id)
+            events.push(JSON.stringify(event));
+        }
         profile = JSON.parse(`{
                                     "name": "${row.name}",
                                     "company": "${row.company}",
                                     "email": "${row.email}",
                                     "phone": "${row.phone}",
-                                    "skills": [${skills}]
+                                    "skills": [${skills}],
+                                    "events": [${events}]
                               }`);
         return profile;
     }

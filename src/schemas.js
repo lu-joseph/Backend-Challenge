@@ -24,6 +24,10 @@ const schemas = {
         hacker_id: Joi.number().required(),
         skill: Joi.string().required(),
         rating: Joi.number().required()
+    }),
+    eventAttendSchema: Joi.object().keys({
+        hacker_id: Joi.number().required(),
+        event_id: Joi.number().required()
     })
 };
 

@@ -8,7 +8,7 @@ function connectDB(dbFile) {
 	});
 }
 
-// resolves to true if successful run
+// returns promise for query run, resolves to true if successful run
 function dbRunMethodPromise(db, query, params) {
 	return new Promise((resolve, reject) => {
 		db.run(query, params, (err) => {
