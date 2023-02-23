@@ -1,10 +1,20 @@
 # Hack the North 2023 Backend Challenge
 
-## Database setup:
+## Setup:
 
 To set up the database, run the script in the root directory with the command 
 
-> `node tableSetup`.
+> `node tableSetup`
+
+To set up the packages, run command
+
+> `npm install`
+
+## Run backend server:
+
+To run the backend server, run command
+
+> `npm start`
 
 ## Endpoints:
 
@@ -567,3 +577,4 @@ Successful operation
 
 * Events:
   * Endpoints to deal with hackers attending events
+  * Events and Involvements tables created to manage hacker and event attendance information
