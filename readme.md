@@ -118,24 +118,22 @@ Successful operation
 <details> <summary> Example value </summary> 
 
 ```json
-  [
-    {
-      "name": "Breanna Dillon",
-      "company": "Jackson Ltd",
-      "email": "lorettabrown@example.net",
-      "phone": "+1-924-116-7963",
-      "skills": [
-        {
-          "skill": "Swift",
-          "rating": 4
-        },
-        {
-          "skill": "OpenCV",
-          "rating": 1
-        }
-      ]
-    }
-  ]
+  {
+    "name": "Breanna Dillon",
+    "company": "Jackson Ltd",
+    "email": "lorettabrown@example.net",
+    "phone": "+1-924-116-7963",
+    "skills": [
+      {
+        "skill": "Swift",
+        "rating": 4
+      },
+      {
+        "skill": "OpenCV",
+        "rating": 1
+      }
+    ]
+  }
 ```
 
 </details>
